@@ -15,7 +15,6 @@ from optparse import OptionParser
 import paramiko
 
 SSH_PORT = 22
-DEFAULT_PORT = 9001
 
 class ForwardServer (SocketServer.ThreadingTCPServer):
     daemon_threads = True
@@ -66,6 +65,21 @@ class TunnelHelper(object):
     TUNNELS = {}
 
     @classmethod
+    def get_random_port(cls):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('localhost', 0))
+        _, port = s.getsockname()
+        s.close()
+        return port
+
+    @classmethod
+    def acquire_host_pair(cls, port=None):
+        port = port or cls.get_random_port()
+        print port
+        return port
+
+    @classmethod
     def forward_tunnel(cls, server_port, remote_host, remote_port, transport):
         # this is a little convoluted, but lets me configure things for the Handler
         # object.  (SocketServer doesn't give Handlers any way to access the outer
@@ -87,6 +101,7 @@ class TunnelHelper(object):
       tunnel_password=None,):
 
         tunnel_key = (remote_host, remote_port)
+        tunnel_port = cls.acquire_host_pair(tunnel_port)
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
@@ -128,8 +143,7 @@ def parse_options():
     parser = OptionParser(usage='usage: %prog [options] <ssh-server>[:<server-port>]',
                           version='%prog 1.0', description=HELP)
     parser.add_option('-p', '--local-port', action='store', type='int', dest='port',
-                      default=DEFAULT_PORT,
-                      help='local port to forward (default: %d)' % DEFAULT_PORT)
+                      help='local port to forward')
     parser.add_option('-u', '--user', action='store', type='string', dest='user',
                       default=getpass.getuser(),
                       help='username for SSH authentication (default: %s)' % getpass.getuser())

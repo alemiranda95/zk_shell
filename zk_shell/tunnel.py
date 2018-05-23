@@ -1,68 +1,75 @@
 import getpass
-import os
 import socket
 import select
-import logging
-
-try:
-    import SocketServer
-except ImportError:
-    import socketserver as SocketServer
-
+import threading
 import sys
+import paramiko
 from optparse import OptionParser
 
-import paramiko
-
 SSH_PORT = 22
-
-class ForwardServer (SocketServer.ThreadingTCPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-
-class Handler (SocketServer.BaseRequestHandler):
-
-    def handle(self):
-        try:
-            chan = self.ssh_transport.open_channel('direct-tcpip',
-                                                   (self.chain_host, self.chain_port),
-                                                   self.request.getpeername())
-        except Exception as e:
-            print('Incoming request to %s:%d failed: %s' % (self.chain_host,
-                                                              self.chain_port,
-                                                              repr(e)))
-            return
-        if chan is None:
-            print('Incoming request to %s:%d was rejected by the SSH server.' %
-                    (self.chain_host, self.chain_port))
-            return
-
-        print('Connected!  Tunnel open %r -> %r -> %r' % (self.request.getpeername(),
-                                                            chan.getpeername(), (self.chain_host, self.chain_port)))
-
-        while True:
-            r, w, x = select.select([self.request, chan], [], [])
-            if self.request in r:
-                data = self.request.recv(1024)
-                print data
-                if len(data) == 0:
-                    break
-                chan.send(data)
-            if chan in r:
-                data = chan.recv(1024)
-                print data
-                if len(data) == 0:
-                    break
-                self.request.send(data)
-                
-        peername = self.request.getpeername()
-        chan.close()
-        self.request.close()
-        print('Tunnel closed from %r' % (peername,))
 
 class TunnelHelper(object):
 
     TUNNELS = {}
+
+    #we initiate the remote socket and connect. we read from 2 data buffers: the remote socket
+    #and the channel associated with the forwarded connection and we relay the data to each.
+    #if there is no data, we close the socket and channel.
+    @classmethod
+    def handler(cls, chan, remote_host, remote_port):
+        remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            remote_socket.connect((remote_host, remote_port))
+        except:
+            print("[!] Unable to establish tcp connection to %s:%d" % (remote_host, remote_port))
+            sys.exit(1)
+
+        print("[*] Established tcp connection to %s:%d" % (remote_host, remote_port))
+        while True:
+            r, w, x = select.select([remote_socket, chan], [], [])
+            if remote_socket in r:
+                data = remote_socket.recv(1024)
+                if len(data) == 0:
+                    break
+                print("[*] Sending %d bytes via SSH channel" % (len(data)))
+                print("[*] Data: ", data)
+                chan.send(data)
+            if chan in r:
+                data = chan.recv(1024)
+                if len(data) == 0:
+                    break
+                print("[*] Sending %d bytes via TPC Socket" % (len(data)))
+                print("[*] Data: ", data)
+                remote_socket.send(data)
+        chan.close()
+        remote_socket.close()
+        print("[*] Tunnel connection is closed")
+
+    #request port forwarding from server and open a session ssh channel.
+    #forwarded connection will be picked up via the client transport's accept method
+    #within the infinite loop.
+    #thread will be spawned to handle the forwarded connection.
+    @classmethod
+    def forward_tunnel(cls, local_port, remote_host, remote_port, client_transport):
+        print("[*] Starting reverse port forwarding")
+        try:
+            client_transport.request_port_forward("", local_port)
+            client_transport.open_session()
+        except paramiko.SSHException as err:
+            print("[!] Unable to enable reverse port forwarding: ", str(err))
+            sys.exit(1)
+        print("[*] Started. Waiting for tcp connection on 127.0.0.1:%d from SSH server" % (local_port))
+        while True:
+            try:
+                chan = client_transport.accept(60)
+                if not chan:
+                    continue
+                thr = threading.Thread(target=cls.handler, args=(chan, remote_host, remote_port))
+                thr.start()
+            except KeyboardInterrupt:
+                client_transport.cancel_port_forward("", local_port)
+                client_transport.close()
+                sys.exit(0)
 
     @classmethod
     def get_random_port(cls):
@@ -78,17 +85,6 @@ class TunnelHelper(object):
         port = port or cls.get_random_port()
         print port
         return port
-
-    @classmethod
-    def forward_tunnel(cls, server_port, remote_host, remote_port, transport):
-        # this is a little convoluted, but lets me configure things for the Handler
-        # object.  (SocketServer doesn't give Handlers any way to access the outer
-        # server normally.)
-        class SubHander (Handler):
-            chain_host = remote_host
-            chain_port = remote_port
-            ssh_transport = transport
-        ForwardServer(('', server_port), SubHander).serve_forever()
 
     @classmethod
     def create_tunnel(

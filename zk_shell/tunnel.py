@@ -165,8 +165,6 @@ def parse_options():
 
 
 def main():
-    logging.basicConfig(filename='test.log', level=logging.DEBUG)
-    logger = logging.getLogger("my_log")
     options, server, remote = parse_options()
     
     password = None

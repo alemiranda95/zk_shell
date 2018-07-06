@@ -23,7 +23,7 @@ class Handler (SocketServer.BaseRequestHandler):
                                                    (self.chain_host, self.chain_port),
                                                    self.request.getpeername())
         except Exception as e:
-            cls.cancel_tunnel(self.chain_host, self.chain_port)
+            TunnelHelper.cancel_tunnel(self.chain_host, self.chain_port)
             return
         
         if chan is None:

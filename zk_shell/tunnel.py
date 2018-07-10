@@ -3,6 +3,7 @@ import socket
 import select
 import threading
 import sys
+import time
 import paramiko
 try:
     import SocketServer
@@ -19,10 +20,13 @@ class Handler (SocketServer.BaseRequestHandler):
 
     def handle(self):
         try:
+        	print chain_host
             chan = self.ssh_transport.open_channel('direct-tcpip',
                                                    (self.chain_host, self.chain_port),
                                                    self.request.getpeername())
         except Exception as e:
+            print str(e)
+            #print("[!] Unable to establish tcp connection to %s:%d" % (self.chain_host, self.chain_port))
             TunnelHelper.cancel_tunnel(self.chain_host, self.chain_port)
             return
         
@@ -85,11 +89,6 @@ class TunnelHelper(object):
       tunnel_user=None,
       tunnel_password=None,):
 
-	    """
-	      Create or retrieve a tunnel to the remote host & port, using
-	      tunnel_host:tunnel_port as the tunneling server.
-	    """
-
         if not tunnel_password:
             tunnel_password = getpass.getpass('Enter SSH password: ')
 
@@ -102,7 +101,6 @@ class TunnelHelper(object):
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
-           
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:

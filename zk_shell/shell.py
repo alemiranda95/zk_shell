@@ -45,7 +45,7 @@ from kazoo.exceptions import (
 from kazoo.protocol.states import KazooState
 from kazoo.security import OPEN_ACL_UNSAFE, READ_ACL_UNSAFE
 from tabulate import tabulate
-from twitter.common.net.tunnel import TunnelHelper
+from tunnel import TunnelHelper
 from xcmd.complete import (
     complete,
     complete_boolean,
@@ -253,7 +253,7 @@ class Shell(XCmd):
         self._txn = None        # holds the current transaction, if any
         self.connected = False
         self.state_transitions_enabled = True
-        self._tunnel = tunnel
+        self._tunnel = 'localhost'
 
         if len(self._hosts) > 0:
             self._connect(self._hosts)
@@ -2772,6 +2772,7 @@ child_watches=%s"""
             rhost, rport = hosts_to_endpoints(nl.host)[0]
             if self._tunnel is not None:
                 lhost, lport = TunnelHelper.create_tunnel(rhost, rport, self._tunnel)
+                print lhost + ":" + str(lport)
                 hosts.append('{0}:{1}'.format(lhost, lport))
             else:
                 hosts.append(nl.host)

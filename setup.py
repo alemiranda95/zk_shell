@@ -50,7 +50,8 @@ setup(name='zk_shell',
           'kazoo==2.2.1',
           'tabulate==0.7.7',
           'twitter.common.net==0.3.9',
-          'xcmd==0.0.3'
+          'xcmd==0.0.3',
+          'paramiko==2.4.1'
       ],
       tests_require=[
           'ansicolors==1.0.2',

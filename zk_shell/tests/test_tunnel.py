@@ -3,7 +3,7 @@ import sys
 import threading
 import unittest
 import subprocess
-from tunnel import TunnelHelper
+from zk_shell.tunnel import TunnelHelper
 
 STOP = False
 PORT = None

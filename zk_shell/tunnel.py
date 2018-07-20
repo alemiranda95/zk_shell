@@ -5,6 +5,7 @@ import threading
 import sys
 import time
 import paramiko
+import traceback
 try:
     import SocketServer
 except ImportError:
@@ -20,13 +21,11 @@ class Handler (SocketServer.BaseRequestHandler):
 
     def handle(self):
         try:
-        	print chain_host
-            chan = self.ssh_transport.open_channel('direct-tcpip',
-                                                   (self.chain_host, self.chain_port),
-                                                   self.request.getpeername())
+			chan = self.ssh_transport.open_channel('direct-tcpip',
+			                                       (self.chain_host, self.chain_port),
+			                                       self.request.getpeername())
         except Exception as e:
-            print str(e)
-            #print("[!] Unable to establish tcp connection to %s:%d" % (self.chain_host, self.chain_port))
+            print("[!] Unable to establish tcp connection to %s:%d -> %s" % (self.chain_host, self.chain_port), str(e))
             TunnelHelper.cancel_tunnel(self.chain_host, self.chain_port)
             return
         
@@ -57,7 +56,7 @@ class TunnelHelper(object):
     def forward_tunnel(cls, local_port, remote_host, remote_port, transport):
         class SubHander (Handler):
             chain_host = remote_host
-            chain_port = remote_port
+            chain_port = int(remote_port)
             ssh_transport = transport
 
         server = ForwardServer(('', local_port), SubHander)

@@ -253,7 +253,7 @@ class Shell(XCmd):
         self._txn = None        # holds the current transaction, if any
         self.connected = False
         self.state_transitions_enabled = True
-        self._tunnel = 'localhost'
+        self._tunnel = tunnel
         self.use_paramiko = use_paramiko
 
         if len(self._hosts) > 0:
@@ -2775,11 +2775,9 @@ child_watches=%s"""
             	lhost = None
             	lport = None
                 if self.use_paramiko:
-                    print "Usando paramiko"	
                     from tunnel import TunnelHelper
                     lhost, lport = TunnelHelper.create_tunnel(rhost, rport, self._tunnel)
                 else:
-                    print "Usando twitter"
                     from twitter.common.net.tunnel import TunnelHelper
                     lhost, lport = TunnelHelper.create_tunnel(rhost, rport, self._tunnel)
                 print lhost + ":" + str(lport)

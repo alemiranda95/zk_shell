@@ -19,7 +19,7 @@ except NameError:
 
 class CLIParams(
         namedtuple("CLIParams",
-                   "connect_timeout run_once run_from_stdin sync_connect hosts readonly tunnel version")):
+                   "connect_timeout run_once run_from_stdin sync_connect hosts readonly tunnel use_paramiko version")):
     """
     This defines the running params for a CLI() object. If you'd like to do parameters processing
     from some other point you'll need to fill up an instance of this class and pass it to
@@ -63,6 +63,10 @@ def get_params():
                         type=str,
                         help="Create a ssh tunnel via this host",
                         default=None)
+    parser.add_argument("--use-paramiko",
+                        action="store_true",
+                        help="Use paramiko to create a tunnel instead of twitter-common",
+                        default=False)
     parser.add_argument("--version",
                         action="store_true",
                         default=False,
@@ -79,6 +83,7 @@ def get_params():
         params.hosts,
         params.readonly,
         params.tunnel,
+        params.use_paramiko,
         params.version
     )
 
@@ -136,7 +141,8 @@ class CLI(object):
                       output=sys.stdout,
                       async=async,
                       read_only=params.readonly,
-                      tunnel=params.tunnel)
+                      tunnel=params.tunnel,
+                      use_paramiko=params.use_paramiko)
 
         if not interactive:
             rc = 0

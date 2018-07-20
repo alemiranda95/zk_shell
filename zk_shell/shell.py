@@ -45,7 +45,6 @@ from kazoo.exceptions import (
 from kazoo.protocol.states import KazooState
 from kazoo.security import OPEN_ACL_UNSAFE, READ_ACL_UNSAFE
 from tabulate import tabulate
-from tunnel import TunnelHelper
 from xcmd.complete import (
     complete,
     complete_boolean,
@@ -243,7 +242,8 @@ class Shell(XCmd):
                  setup_readline=True,
                  async=True,
                  read_only=False,
-                 tunnel=None):
+                 tunnel=None,
+                 use_paramiko=False):
         XCmd.__init__(self, None, setup_readline, output)
         self._hosts = hosts if hosts else []
         self._connect_timeout = float(timeout)
@@ -254,6 +254,7 @@ class Shell(XCmd):
         self.connected = False
         self.state_transitions_enabled = True
         self._tunnel = 'localhost'
+        self.use_paramiko = use_paramiko
 
         if len(self._hosts) > 0:
             self._connect(self._hosts)
@@ -2771,7 +2772,16 @@ child_watches=%s"""
             nl = Netloc.from_string(auth_host)
             rhost, rport = hosts_to_endpoints(nl.host)[0]
             if self._tunnel is not None:
-                lhost, lport = TunnelHelper.create_tunnel(rhost, rport, self._tunnel)
+            	lhost = None
+            	lport = None
+                if self.use_paramiko:
+                    print "Usando paramiko"	
+                    from tunnel import TunnelHelper
+                    lhost, lport = TunnelHelper.create_tunnel(rhost, rport, self._tunnel)
+                else:
+                    print "Usando twitter"
+                    from twitter.common.net.tunnel import TunnelHelper
+                    lhost, lport = TunnelHelper.create_tunnel(rhost, rport, self._tunnel)
                 print lhost + ":" + str(lport)
                 hosts.append('{0}:{1}'.format(lhost, lport))
             else:

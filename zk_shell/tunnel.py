@@ -110,6 +110,7 @@ class TunnelHelper(object):
 
         try:
             thr = threading.Thread(target=cls.forward_tunnel, args=(tunnel_port, remote_host, remote_port, client.get_transport()))
+            thr.daemon = True
             thr.start()
         except Exception as e:
             print('*** Failed to forward port %d to %s:%d: %r' % (tunnel_port, remote_host, remote_port, e))

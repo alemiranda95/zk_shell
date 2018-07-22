@@ -59,7 +59,8 @@ setup(name='zk_shell',
           'nose==1.3.7',
           'tabulate==0.7.7',
           'twitter.common.net==0.3.9',
-          'xcmd==0.0.3'
+          'xcmd==0.0.3',
+          'paramiko==2.4.1'
       ],
       extras_require={
           'test': [
@@ -68,7 +69,8 @@ setup(name='zk_shell',
               'nose==1.3.7',
               'tabulate==0.7.7',
               'twitter.common.net==0.3.9',
-              'xcmd==0.0.3'
+              'xcmd==0.0.3',
+              'paramiko==2.4.1'
           ]
       },
       include_package_data=True,

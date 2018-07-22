@@ -6,7 +6,10 @@ import threading
 import unittest
 import subprocess
 import sys
-from tunnel import TunnelHelper
+try:
+	from tunnel import TunnelHelper
+except ImportError:
+	from zk_shell.tunnel import TunnelHelper
 
 STOP = False
 PORT = None

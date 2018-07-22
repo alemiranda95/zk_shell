@@ -6,6 +6,7 @@ import threading
 import unittest
 import subprocess
 import sys
+import os
 try:
 	from tunnel import TunnelHelper
 except ImportError:
@@ -68,7 +69,8 @@ class TestTunnel(unittest.TestCase):
 		thr = threading.Thread(target=listen_local_port)
 		thr.start()
 
-		rhost, rport = TunnelHelper.create_tunnel('localhost', PORT)
+		passwd = os.environ['TUNNEL_TEST_PASSWORD']
+		rhost, rport = TunnelHelper.create_tunnel('localhost', PORT, tunnel_password=passwd)
 		command = "nc -zw3 localhost %s && echo \"True\" || echo \"False\"" % (str(rport))
 		forwarded = subprocess.check_output([command], shell=True).rstrip()
 
@@ -86,7 +88,8 @@ class TestTunnel(unittest.TestCase):
 		"""
 		Test creation of a remote tunnel
 		"""
-		rhost, rport = TunnelHelper.create_tunnel('www.google.com', 80)
+		passwd = os.environ['TUNNEL_TEST_PASSWORD']
+		rhost, rport = TunnelHelper.create_tunnel('www.google.com', 80, tunnel_password=passwd)
 		command = "nc -zw3 localhost %s && echo \"True\" || echo \"False\"" % (str(rport))
 		forwarded = subprocess.check_output([command], shell=True).rstrip()
 

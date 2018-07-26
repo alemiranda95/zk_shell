@@ -1,16 +1,10 @@
-"""
-	NOTE: To run the test, tunnel.py must be in the same directory
-"""
 import socket
 import threading
 import unittest
 import subprocess
 import sys
 import os
-try:
-	from tunnel import TunnelHelper
-except ImportError:
-	from zk_shell.tunnel import TunnelHelper
+from zk_shell.tunnel import TunnelHelper
 
 STOP = False
 PORT = None

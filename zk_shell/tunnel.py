@@ -6,6 +6,7 @@ import sys
 import time
 import paramiko
 import traceback
+import os
 try:
     import SocketServer
 except ImportError:
@@ -89,7 +90,10 @@ class TunnelHelper(object):
       tunnel_password=None,):
 
         if not tunnel_password:
-            tunnel_password = getpass.getpass('Enter SSH password: ')
+            try:
+                os.environ['SSH_AGENT_PID']
+            except KeyError:
+                tunnel_password = getpass.getpass('Enter SSH password: ')
 
         if not tunnel_user:
             tunnel_user = getpass.getuser()
@@ -102,8 +106,10 @@ class TunnelHelper(object):
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+        ssh_key_file = "/home/" + tunnel_user + "/.ssh/id_rsa"
+
         try:
-            client.connect(hostname=tunnel_host, port=SSH_PORT, username=tunnel_user, password=tunnel_password)
+            client.connect(hostname=tunnel_host, port=SSH_PORT, username=tunnel_user, password=tunnel_password, key_filename=ssh_key_file)
         except Exception as e:
             print('*** Failed to connect to %s:%d: %r' % (tunnel_host, SSH_PORT, e))
             sys.exit(1)
